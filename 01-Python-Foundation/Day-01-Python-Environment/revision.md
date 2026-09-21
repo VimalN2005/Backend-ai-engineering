@@ -1,33 +1,33 @@
 # Day 01: 5-Minute Rapid Revision Notes
 
-सोने से पहले या इंटरव्यू से ठीक पहले इन बुलेट पॉइंट्स को 5 मिनट में दोहराएँ:
+Review these high-yield bullet points before interviews or coding sessions:
 
 ---
 
 - ⚡ **Execution Pipeline:**
   `Source (.py)` ➔ `Lexing & Parsing` ➔ `Abstract Syntax Tree (AST)` ➔ `Bytecode (.pyc)` ➔ `PVM Loop (ceval.c)` ➔ `Machine Execution`.
 
-- ⚡ **Bytecode Purpose:**
-  प्लेटफ़ॉर्म इंडिपेंडेंस + फ़ास्ट स्टार्टअप। `.pyc` कोड को तेज़ नहीं चलाता, बल्कि पार्सिंग टाइम बचाता है।
+- ⚡ **Purpose of Bytecode:**
+  Cross-platform portability and faster application startup. `.pyc` files do not speed up execution loops; they bypass source re-parsing.
 
 - ⚡ **Memory Architecture:**
-  - Python में वेरिएबल केवल **पॉइंटर्स / रेफरेंसेज** होते हैं।
-  - `PyObject_HEAD` = `ob_refcnt` (8B) + `ob_type` (8B) = 16B हेडर ओवरहेड।
-  - जब `ref_count == 0`, CPython मेमोरी को तुरंत फ्री कर देता है (Deterministic Garbage Collection)।
+  - Python variables are **pointers/references**, not storage boxes.
+  - `PyObject_HEAD` = `ob_refcnt` (8 bytes) + `ob_type` (8 bytes) = 16-byte minimum header on 64-bit platforms.
+  - Deterministic deallocation: As soon as `ref_count == 0`, memory is immediately freed.
 
-- ⚡ **Identity vs Equality:**
-  - `a == b` ➔ मान समान हैं (`a.__eq__(b)` कॉल होता है)।
-  - `a is b` ➔ मेमोरी एड्रेस समान है (`id(a) == id(b)`).
-  - केवल `None`, `True`, `False` के साथ `is` इस्तेमाल करें।
+- ⚡ **Identity vs. Equality:**
+  - `a == b` ➔ Value equivalence (invokes `a.__eq__(b)`).
+  - `a is b` ➔ Memory address identity (`id(a) == id(b)`).
+  - Always use `is` for singletons (`None`, `True`, `False`).
 
 - ⚡ **Interning Optimization:**
-  - Small Integers: `[-5, 256]` CPython स्टार्टअप पर ही सिंगलटन बन जाते हैं।
-  - String Interning: वैलिड आइडेंटिफायर दिखने वाले छोटे स्ट्रिंग्स को CPython कैश करता है।
+  - Small Integers: Range `[-5, 256]` are cached permanently as singletons during interpreter startup.
+  - String Interning: Immutable alphanumeric string literals are interned by CPython for fast pointer comparisons in dictionary lookups.
 
-- ⚡ **Virtual Environment Rules:**
-  - `sys.prefix != sys.base_prefix` ➔ Virtualenv एक्टिव है।
-  - `pyvenv.cfg` सिस्टम Python का होम पाथ स्टोर करती है।
-  - प्रोडक्शन डॉकर कंटेनर्स में `PYTHONDONTWRITEBYTECODE=1` सेट करना बेस्ट प्रैक्टिस है।
+- ⚡ **Virtual Environment Rule:**
+  - `sys.prefix != sys.base_prefix` indicates an active virtual environment.
+  - `pyvenv.cfg` records the base Python home directory.
+  - Setting `PYTHONDONTWRITEBYTECODE=1` is recommended for stateless production Docker containers.
 
 - ⚡ **Git Hygiene:**
-  - हमेशा `.env`, `venv/`, `__pycache__/`, `*.pyc` को `.gitignore` में रखें।
+  - Never commit `.env`, `venv/`, `__pycache__/`, or `*.pyc` files.

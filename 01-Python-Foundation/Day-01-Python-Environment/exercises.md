@@ -1,13 +1,13 @@
-# Day 01: Practical Hands-on Exercises
+# Day 01: Practical Hands-On Exercises
 
-इन तीनों समस्याओं को हल करके अपने Python इंटरनल्स और एनवायरनमेंट कॉन्सेप्ट्स को टेस्ट करें।
+Complete these three coding challenges to master Python environment mechanics, bytecode inspection, and memory reference behavior.
 
 ---
 
 ## Exercise 1: Bytecode Opcode Counter (Easy)
 
 ### Problem Statement:
-Python के `dis` मॉड्यूल का उपयोग करके एक ऐसा फ़ंक्शन बनाएं जो किसी भी दिए गए फ़ंक्शन को एनालाइज़ करे और यह बताए कि उसमें कुल कितने और कौन-से बाइटकोड इंस्ट्रक्शन्स (`opcodes`) इस्तेमाल हुए हैं।
+Using Python's built-in `dis` module, implement a function that accepts any callable, disassembles its compiled bytecode, and returns a dictionary summarizing the frequency of each opcode instruction used.
 
 ### Starter Code:
 ```python
@@ -21,7 +21,7 @@ def count_opcodes(target_func: Callable) -> Dict[str, int]:
     """
     opcode_counts: Dict[str, int] = {}
     
-    # TODO: Use dis.get_instructions(target_func) to iterate and count
+    # TODO: Iterate over dis.get_instructions(target_func) and count occurrences
     
     return opcode_counts
 
@@ -30,19 +30,20 @@ def sample_logic(a: int, b: int) -> int:
     result = a + b
     return result * 2
 
-# Output should show counts of: LOAD_FAST, BINARY_OP, STORE_FAST, RETURN_VALUE, etc.
+# Expected output should show counts for instructions like:
+# 'LOAD_FAST', 'BINARY_OP', 'STORE_FAST', 'RETURN_VALUE', etc.
 print(count_opcodes(sample_logic))
 ```
 
 ---
 
-## Exercise 2: Shallow vs Deep Identity Comparator (Medium)
+## Exercise 2: Shallow vs. Deep Identity Comparator (Medium)
 
 ### Problem Statement:
-एक ऐसा फ़ंक्शन लिखें जो दो नेस्टेड डेटा स्ट्रक्चर्स (Lists या Dicts) को लेता है और यह रिपोर्ट करता है:
-1. क्या दोनों का रूट मेमोरी एड्रेस समान है (`a is b`)?
-2. क्या अंदरूनी ऑब्जेक्ट्स (नेस्टेड एलीमेंट्स) का मेमोरी एड्रेस समान है?
-3. क्या दोनों के मान समान हैं (`a == b`)?
+Write an inspection function that takes two nested data structures (lists or dictionaries) and returns a detailed identity audit:
+1. Are the root memory addresses identical (`a is b`)?
+2. Are the nested elements sharing identical memory references?
+3. Are the underlying values equal (`a == b`)?
 
 ### Starter Code:
 ```python
@@ -50,27 +51,28 @@ from typing import Any, Dict
 
 def inspect_nested_identity(obj_a: Any, obj_b: Any) -> Dict[str, Any]:
     """
-    Returns an analysis dictionary showing:
-    - root_is_identical: bool
-    - values_equal: bool
-    - nested_references_shared: bool
+    Returns an analysis dictionary reporting:
+    - 'root_is_identical': bool
+    - 'values_equal': bool
+    - 'nested_references_shared': bool
     """
-    # TODO: Implement identity and equality verification
+    # TODO: Implement identity, equality, and nested reference checks
     pass
 ```
 
 ### Verification Criteria:
-- `orig = [1, [2, 3]]` और `shallow = orig.copy()` पास करने पर `root_is_identical: False` लेकिन `nested_references_shared: True` होना चाहिए।
-- `deep = copy.deepcopy(orig)` पास करने पर दोनों `False` होने चाहिए।
+- Passing `orig = [1, [2, 3]]` and `shallow = orig.copy()` must return:
+  `root_is_identical: False`, `nested_references_shared: True`.
+- Passing `deep = copy.deepcopy(orig)` must return both as `False`.
 
 ---
 
 ## Exercise 3: CLI Environment Lockfile Auditor (Production Practical)
 
 ### Problem Statement:
-एक प्रोडक्शन यूटिलिटी स्क्रिप्ट लिखें जो मौजूदा प्रोजेक्ट के `requirements.txt` को स्कैन करे और चेक करे:
-1. क्या कोई अनपिन्ड (unpinned) डिपेंडेंसी है? (उदाहरण: `requests` बिना `==` के, जो प्रोडक्शन में वर्ज़न ब्रेक कर सकती है)।
-2. क्या इनसिक्योर/डिप्रीकेटेड पैकेजेस हैं?
+Build a production-grade utility function that parses a `requirements.txt` file and validates dependency locking:
+1. Identify all pinned dependencies (containing exact version specification `==`).
+2. Identify all unpinned or loosely pinned dependencies (e.g., packages without `==`), which could introduce breaking changes in production.
 
 ### Starter Code:
 ```python
@@ -83,8 +85,8 @@ def audit_requirements_file(file_path: Path) -> Tuple[List[str], List[str]]:
     Returns:
       (valid_pinned_packages, unpinned_or_invalid_packages)
     """
-    pinned = []
-    unpinned = []
+    pinned: List[str] = []
+    unpinned: List[str] = []
     
     # TODO: Read lines, strip comments (#), and verify '==' presence
     
