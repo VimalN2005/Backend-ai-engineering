@@ -58,6 +58,7 @@ Day-XX-[Topic-Name]/
 
 ## 📂 Quick Directory Links
 
+- 🧠 **[AI Backend Core Skills Theory Guide](00-Resources/CORE-SKILLS-THEORY-GUIDE.md)** *(Daily Theory, Architectures & Comparisons)*
 - [01-Python-Foundation](01-Python-Foundation/)
 - [02-DSA-Essentials](02-DSA-Essentials/)
 - [03-Django-and-DRF](03-Django-and-DRF/)
