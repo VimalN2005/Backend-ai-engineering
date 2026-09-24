@@ -7,7 +7,7 @@ Track your daily commits and milestones. Keep the streak unbroken! 🔥
 ### Phase 1: Python Core, Internals & Asynchronous Systems (Days 01–15)
 - [x] **Day 01**: Python Environment, Execution Flow, Bytecode & Memory References
 - [x] **Day 02**: String Internals, Unicode, Regex & Slicing Mechanics
-- [ ] **Day 03**: Lists, Tuples, Sets & Dictionary Internals (Hashing & O(1) Lookups)
+- [x] **Day 03**: Lists, Tuples, Sets & Dictionary Internals (Hashing & O(1) Lookups)
 - [ ] **Day 04**: Operators, Precedence, Control Flow & High-Perf Comprehensions
 - [ ] **Day 05**: Functions, Scopes (LEGB), Variable Arguments & Advanced Type Hints
 - [ ] **Day 06**: Closures, Custom Decorators & Functional Python with `functools`
