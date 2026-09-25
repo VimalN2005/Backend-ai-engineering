@@ -58,6 +58,7 @@ Day-XX-[Topic-Name]/
 
 ## 📂 Quick Directory Links
 
+- 🚀 **[20 Software Engineering Topics for the AI Era](00-Resources/01-SOFTWARE-ENGINEERING-AI-ERA-GUIDE.md)** *(Master Engineering Pillars & Phased Plan)*
 - 🧠 **[AI Backend Core Skills Theory Guide](00-Resources/CORE-SKILLS-THEORY-GUIDE.md)** *(Daily Theory, Architectures & Comparisons)*
 - [01-Python-Foundation](01-Python-Foundation/)
 - [02-DSA-Essentials](02-DSA-Essentials/)
