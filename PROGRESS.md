@@ -10,8 +10,8 @@ Track your daily commits and milestones. Keep the streak unbroken! 🔥
 - [x] **Day 03**: Lists, Tuples, Sets & Dictionary Internals (Hashing & O(1) Lookups)
 - [x] **Day 04**: Operators, Precedence, Control Flow & High-Perf Comprehensions
 - [x] **Day 05**: Functions, Scopes (LEGB), Variable Arguments & Advanced Type Hints
-- [ ] **Day 06**: Closures, Custom Decorators & Functional Python with `functools`
-- [ ] **Day 07**: Robust Exception Hierarchies, Context Managers & Resource Safety
+- [x] **Day 06**: Closures, Custom Decorators & Functional Python with `functools`
+- [x] **Day 07**: Robust Exception Hierarchies, Context Managers & Resource Safety
 - [ ] **Day 08**: File I/O, OS Pathlib, High-Performance JSON/CSV Serialization
 - [ ] **Day 09**: Object-Oriented Programming, Dunder Methods & Inheritance/MRO
 - [ ] **Day 10**: Dataclasses, Pydantic V2 Models & Strict Production Typing
