@@ -12,7 +12,7 @@ Track your daily commits and milestones. Keep the streak unbroken! 🔥
 - [x] **Day 05**: Functions, Scopes (LEGB), Variable Arguments & Advanced Type Hints
 - [x] **Day 06**: Closures, Custom Decorators & Functional Python with `functools`
 - [x] **Day 07**: Robust Exception Hierarchies, Context Managers & Resource Safety
-- [ ] **Day 08**: File I/O, OS Pathlib, High-Performance JSON/CSV Serialization
+- [x] **Day 08**: File I/O, OS Pathlib, High-Performance JSON/CSV Serialization
 - [ ] **Day 09**: Object-Oriented Programming, Dunder Methods & Inheritance/MRO
 - [ ] **Day 10**: Dataclasses, Pydantic V2 Models & Strict Production Typing
 - [ ] **Day 11**: Iterators, Generators (`yield from`) & Memory Stream Optimization
