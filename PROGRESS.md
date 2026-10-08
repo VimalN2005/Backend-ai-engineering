@@ -18,7 +18,7 @@ Track your daily commits and milestones. Keep the streak unbroken! 🔥
 - [x] **Day 11**: Iterators, Generators (`yield from`) & Memory Stream Optimization
 - [x] **Day 12**: Concurrency: Threading, Multiprocessing, GIL & Process Pools
 - [x] **Day 13**: Asyncio: Event Loop, Coroutines, Tasks & Async Context Managers
-- [ ] **Day 14**: Pytest Suite, Fixtures, Mocking, Coverage & Production Logging
+- [x] **Day 14**: Pytest Suite, Fixtures, Mocking, Coverage & Production Logging
 - [ ] **Day 15**: Advanced Git, CI/CD with GitHub Actions & Linux CLI for Backend
 
 ---
