@@ -27,7 +27,7 @@ Track your daily commits and milestones. Keep the streak unbroken! 🔥
 - [x] **Day 16**: Two Pointers Technique (Sorted Arrays, Trapping Water)
 - [x] **Day 17**: Sliding Window Technique (Fixed & Dynamic Subarrays, Rate Limiting)
 - [x] **Day 18**: HashMaps & Sets: Fast Lookups, Collision Handling & Anagram Groups
-- [ ] **Day 19**: Stacks & Queues: Parentheses Matching, Monotonic Queues
+- [x] **Day 19**: Stacks & Queues: Parentheses Matching, Monotonic Queues
 - [ ] **Day 20**: Monotonic Stack: Next Greater Element & Temperature Problems
 - [ ] **Day 21**: Linked Lists: Fast & Slow Pointers (Cycle Detection, Reversal)
 - [ ] **Day 22**: Binary Search & Variants (Rotated Arrays, Search Range)
