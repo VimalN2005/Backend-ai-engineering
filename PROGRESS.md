@@ -29,7 +29,7 @@ Track your daily commits and milestones. Keep the streak unbroken! 🔥
 - [x] **Day 18**: HashMaps & Sets: Fast Lookups, Collision Handling & Anagram Groups
 - [x] **Day 19**: Stacks & Queues: Parentheses Matching, Monotonic Queues
 - [x] **Day 20**: Monotonic Stack: Next Greater Element & Temperature Problems
-- [ ] **Day 21**: Linked Lists: Fast & Slow Pointers (Cycle Detection, Reversal)
+- [x] **Day 21**: Linked Lists: Fast & Slow Pointers (Cycle Detection, Reversal)
 - [ ] **Day 22**: Binary Search & Variants (Rotated Arrays, Search Range)
 - [ ] **Day 23**: Binary Trees: Recursive Traversals (Inorder, Preorder, Postorder)
 - [ ] **Day 24**: Tree Breadth-First Search (Level Order) & Depth-First Search
