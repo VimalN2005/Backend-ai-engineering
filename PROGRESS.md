@@ -31,7 +31,7 @@ Track your daily commits and milestones. Keep the streak unbroken! 🔥
 - [x] **Day 20**: Monotonic Stack: Next Greater Element & Temperature Problems
 - [x] **Day 21**: Linked Lists: Fast & Slow Pointers (Cycle Detection, Reversal)
 - [x] **Day 22**: Binary Search & Variants (Rotated Arrays, Search Range)
-- [ ] **Day 23**: Binary Trees: Recursive Traversals (Inorder, Preorder, Postorder)
+- [x] **Day 23**: Binary Trees: Recursive Traversals (Inorder, Preorder, Postorder)
 - [ ] **Day 24**: Tree Breadth-First Search (Level Order) & Depth-First Search
 - [ ] **Day 25**: Heaps & Priority Queues: Top-K Elements & Task Scheduling
 - [ ] **Day 26**: Interval Problems: Merge Intervals & Meeting Rooms
