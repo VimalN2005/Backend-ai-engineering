@@ -33,7 +33,7 @@ Track your daily commits and milestones. Keep the streak unbroken! 🔥
 - [x] **Day 22**: Binary Search & Variants (Rotated Arrays, Search Range)
 - [x] **Day 23**: Binary Trees: Recursive Traversals (Inorder, Preorder, Postorder)
 - [x] **Day 24**: Tree Breadth-First Search (Level Order) & Depth-First Search
-- [ ] **Day 25**: Heaps & Priority Queues: Top-K Elements & Task Scheduling
+- [x] **Day 25**: Heaps & Priority Queues: Top-K Elements & Task Scheduling
 - [ ] **Day 26**: Interval Problems: Merge Intervals & Meeting Rooms
 - [ ] **Day 27**: Graph Fundamentals: Adjacency List, BFS & DFS Traversals
 - [ ] **Day 28**: Topological Sort: Dependency Resolution & Build Systems
