@@ -35,7 +35,7 @@ Track your daily commits and milestones. Keep the streak unbroken! 🔥
 - [x] **Day 24**: Tree Breadth-First Search (Level Order) & Depth-First Search
 - [x] **Day 25**: Heaps & Priority Queues: Top-K Elements & Task Scheduling
 - [x] **Day 26**: Interval Problems: Merge Intervals & Meeting Rooms
-- [ ] **Day 27**: Graph Fundamentals: Adjacency List, BFS & DFS Traversals
+- [x] **Day 27**: Graph Fundamentals: Adjacency List, BFS & DFS Traversals
 - [ ] **Day 28**: Topological Sort: Dependency Resolution & Build Systems
 - [ ] **Day 29**: Core System DSA: LRU Cache Implementation (HashMap + Doubly Linked List)
 - [ ] **Day 30**: Distributed Hash Rings & Rate Limiter Algorithms (Token Bucket)
