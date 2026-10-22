@@ -43,7 +43,7 @@ Track your daily commits and milestones. Keep the streak unbroken! 🔥
 ---
 
 ### Phase 3: Web Fundamentals, Django & DRF Production (Days 31–45)
-- [ ] **Day 31**: Web Protocols: TCP/IP, DNS, HTTP 1.1/2/3 & REST Standards
+- [x] **Day 31**: Web Protocols: TCP/IP, DNS, HTTP 1.1/2/3 & REST Standards
 - [ ] **Day 32**: Django Project Architecture, Settings Modularization & Apps Setup
 - [ ] **Day 33**: Django Models, Field Constraints, Meta Options & Indexing
 - [ ] **Day 34**: Django ORM Queries, Filtering, QuerySets & Complex Aggregations
