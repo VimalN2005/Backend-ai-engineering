@@ -46,7 +46,7 @@ Track your daily commits and milestones. Keep the streak unbroken! 🔥
 - [x] **Day 31**: Web Protocols: TCP/IP, DNS, HTTP 1.1/2/3 & REST Standards
 - [x] **Day 32**: Django Project Architecture, Settings Modularization & Apps Setup
 - [x] **Day 33**: Django Models, Field Constraints, Meta Options & Indexing
-- [ ] **Day 34**: Django ORM Queries, Filtering, QuerySets & Complex Aggregations
+- [x] **Day 34**: Django ORM Queries, Filtering, QuerySets & Complex Aggregations
 - [ ] **Day 35**: ORM Relations & Optimization: Solving N+1 with `select_related` / `prefetch_related`
 - [ ] **Day 36**: Safe Database Migrations, Reversible Migrations & Production Strategy
 - [ ] **Day 37**: Views, Request-Response Lifecycle & Custom Middleware Pipelines
