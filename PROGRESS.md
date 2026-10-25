@@ -47,7 +47,7 @@ Track your daily commits and milestones. Keep the streak unbroken! 🔥
 - [x] **Day 32**: Django Project Architecture, Settings Modularization & Apps Setup
 - [x] **Day 33**: Django Models, Field Constraints, Meta Options & Indexing
 - [x] **Day 34**: Django ORM Queries, Filtering, QuerySets & Complex Aggregations
-- [ ] **Day 35**: ORM Relations & Optimization: Solving N+1 with `select_related` / `prefetch_related`
+- [x] **Day 35**: ORM Relations & Optimization: Solving N+1 with `select_related` / `prefetch_related`
 - [ ] **Day 36**: Safe Database Migrations, Reversible Migrations & Production Strategy
 - [ ] **Day 37**: Views, Request-Response Lifecycle & Custom Middleware Pipelines
 - [ ] **Day 38**: Custom User Model, Authentication Backends & RBAC Permissions
