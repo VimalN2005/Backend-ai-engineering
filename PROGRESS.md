@@ -48,7 +48,7 @@ Track your daily commits and milestones. Keep the streak unbroken! 🔥
 - [x] **Day 33**: Django Models, Field Constraints, Meta Options & Indexing
 - [x] **Day 34**: Django ORM Queries, Filtering, QuerySets & Complex Aggregations
 - [x] **Day 35**: ORM Relations & Optimization: Solving N+1 with `select_related` / `prefetch_related`
-- [ ] **Day 36**: Safe Database Migrations, Reversible Migrations & Production Strategy
+- [x] **Day 36**: Safe Database Migrations, Reversible Migrations & Production Strategy
 - [ ] **Day 37**: Views, Request-Response Lifecycle & Custom Middleware Pipelines
 - [ ] **Day 38**: Custom User Model, Authentication Backends & RBAC Permissions
 - [ ] **Day 39**: Django REST Framework (DRF): Serializers & ModelSerializers
