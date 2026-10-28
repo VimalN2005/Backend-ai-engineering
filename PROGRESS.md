@@ -51,7 +51,7 @@ Track your daily commits and milestones. Keep the streak unbroken! 🔥
 - [x] **Day 36**: Safe Database Migrations, Reversible Migrations & Production Strategy
 - [x] **Day 37**: Views, Request-Response Lifecycle & Custom Middleware Pipelines
 - [x] **Day 38**: Custom User Model, Authentication Backends & RBAC Permissions
-- [ ] **Day 39**: Django REST Framework (DRF): Serializers & ModelSerializers
+- [x] **Day 39**: Django REST Framework (DRF): Serializers & ModelSerializers
 - [ ] **Day 40**: DRF ViewSets, ModelViewSets, Routers & Custom Action Endpoints
 - [ ] **Day 41**: DRF Authentication: JWT (SimpleJWT), Refresh Tokens & Blacklisting
 - [ ] **Day 42**: DRF Advanced Validation, Custom Pagination & Dynamic Filtering
