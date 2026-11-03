@@ -64,7 +64,7 @@ Track your daily commits and milestones. Keep the streak unbroken! 🔥
 ### Phase 4: Databases (SQL, PostgreSQL, SQLAlchemy) & FastAPI (Days 46–60)
 - [x] **Day 46**: SQL Mastery: Advanced Joins, CTEs & Analytic Window Functions
 - [x] **Day 47**: PostgreSQL Internals, Storage Engines & Index Tuning (`EXPLAIN ANALYZE`)
-- [ ] **Day 48**: Database Transactions: ACID, Isolation Levels & Deadlock Resolution
+- [x] **Day 48**: Database Transactions: ACID, Isolation Levels & Deadlock Resolution
 - [ ] **Day 49**: SQLAlchemy 2.0 Core, Declarative Models & Engine Pooling
 - [ ] **Day 50**: SQLAlchemy 2.0 AsyncSession, Relationships & Eager Loading
 - [ ] **Day 51**: Database Migrations with Alembic & Automated Schema Tracking
