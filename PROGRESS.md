@@ -66,7 +66,7 @@ Track your daily commits and milestones. Keep the streak unbroken! 🔥
 - [x] **Day 47**: PostgreSQL Internals, Storage Engines & Index Tuning (`EXPLAIN ANALYZE`)
 - [x] **Day 48**: Database Transactions: ACID, Isolation Levels & Deadlock Resolution
 - [x] **Day 49**: SQLAlchemy 2.0 Core, Declarative Models & Engine Pooling
-- [ ] **Day 50**: SQLAlchemy 2.0 AsyncSession, Relationships & Eager Loading
+- [x] **Day 50**: SQLAlchemy 2.0 AsyncSession, Relationships & Eager Loading
 - [ ] **Day 51**: Database Migrations with Alembic & Automated Schema Tracking
 - [ ] **Day 52**: FastAPI Basics: ASGI, Path/Query Params & Response Models
 - [ ] **Day 53**: Pydantic V2: Data Validation, Custom Field Types & Serialization
