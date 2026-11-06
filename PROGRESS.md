@@ -68,7 +68,7 @@ Track your daily commits and milestones. Keep the streak unbroken! 🔥
 - [x] **Day 49**: SQLAlchemy 2.0 Core, Declarative Models & Engine Pooling
 - [x] **Day 50**: SQLAlchemy 2.0 AsyncSession, Relationships & Eager Loading
 - [x] **Day 51**: Database Migrations with Alembic & Automated Schema Tracking
-- [ ] **Day 52**: FastAPI Basics: ASGI, Path/Query Params & Response Models
+- [x] **Day 52**: FastAPI Basics: ASGI, Path/Query Params & Response Models
 - [ ] **Day 53**: Pydantic V2: Data Validation, Custom Field Types & Serialization
 - [ ] **Day 54**: FastAPI Dependency Injection (`Depends`) & Session Management
 - [ ] **Day 55**: OAuth2 with Password Grant, JWT Authentication & Scopes
