@@ -70,7 +70,7 @@ Track your daily commits and milestones. Keep the streak unbroken! 🔥
 - [x] **Day 51**: Database Migrations with Alembic & Automated Schema Tracking
 - [x] **Day 52**: FastAPI Basics: ASGI, Path/Query Params & Response Models
 - [x] **Day 53**: Pydantic V2: Data Validation, Custom Field Types & Serialization
-- [ ] **Day 54**: FastAPI Dependency Injection (`Depends`) & Session Management
+- [x] **Day 54**: FastAPI Dependency Injection (`Depends`) & Session Management
 - [ ] **Day 55**: OAuth2 with Password Grant, JWT Authentication & Scopes
 - [ ] **Day 56**: FastAPI BackgroundTasks, Custom Middleware & Streaming Responses
 - [ ] **Day 57**: Async Integration Testing with `pytest-asyncio` & HTTPX
