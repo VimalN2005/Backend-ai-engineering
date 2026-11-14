@@ -84,7 +84,7 @@ Track your daily commits and milestones. Keep the streak unbroken! 🔥
 - [x] **Day 61**: Docker Fundamentals: Dockerfile Best Practices & Multi-Stage Builds
 - [x] **Day 62**: Docker Compose Orchestration: Multi-Container Networking & Volumes
 - [x] **Day 63**: Production CI/CD Pipelines with GitHub Actions (Test, Build, Push)
-- [ ] **Day 64**: AWS Fundamentals for Backend: EC2, RDS, S3, IAM & VPC Security
+- [x] **Day 64**: AWS Fundamentals for Backend: EC2, RDS, S3, IAM & VPC Security
 - [ ] **Day 65**: Production Server Deployment: Nginx Reverse Proxy, Gunicorn & SSL (Certbot)
 - [ ] **Day 66**: System Design Core: Scalability, Latency vs Throughput, CAP & PACELC
 - [ ] **Day 67**: Database Scaling: Replication, Read Replicas, Partitioning & Sharding
