@@ -87,7 +87,7 @@ Track your daily commits and milestones. Keep the streak unbroken! 🔥
 - [x] **Day 64**: AWS Fundamentals for Backend: EC2, RDS, S3, IAM & VPC Security
 - [x] **Day 65**: Production Server Deployment: Nginx Reverse Proxy, Gunicorn & SSL (Certbot)
 - [x] **Day 66**: System Design Core: Scalability, Latency vs Throughput, CAP & PACELC
-- [ ] **Day 67**: Database Scaling: Replication, Read Replicas, Partitioning & Sharding
+- [x] **Day 67**: Database Scaling: Replication, Read Replicas, Partitioning & Sharding
 - [ ] **Day 68**: Distributed Caching: Eviction Policies, Stampede & Avalanche Defense
 - [ ] **Day 69**: Load Balancing (L4 vs L7, Nginx) & Horizontal Pod Autoscaling
 - [ ] **Day 70**: Message Queues: RabbitMQ vs Kafka & Event-Driven Architecture
