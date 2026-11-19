@@ -91,7 +91,7 @@ Track your daily commits and milestones. Keep the streak unbroken! 🔥
 - [x] **Day 68**: Distributed Caching: Eviction Policies, Stampede & Avalanche Defense
 - [x] **Day 69**: Load Balancing (L4 vs L7, Nginx) & Horizontal Pod Autoscaling
 - [x] **Day 70**: Message Queues: RabbitMQ vs Kafka & Event-Driven Architecture
-- [ ] **Day 71**: Apache Kafka: Topics, Partitions, Consumer Groups & Offsets
+- [x] **Day 71**: Apache Kafka: Topics, Partitions, Consumer Groups & Offsets
 - [ ] **Day 72**: Monolith to Microservices: Service Boundaries, API Gateways & Saga Pattern
 - [ ] **Day 73**: Distributed Systems: Distributed Transactions, Idempotency & Clocks
 - [ ] **Day 74**: Distributed Resilience: Circuit Breakers, Exponential Backoff & Jitter
