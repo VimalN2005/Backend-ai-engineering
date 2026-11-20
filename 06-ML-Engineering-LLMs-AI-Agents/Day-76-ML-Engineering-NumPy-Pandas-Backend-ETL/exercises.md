@@ -180,3 +180,129 @@ def test_exercise_02() -> None:
 if __name__ == "__main__":
     test_exercise_02()
 ```
+
+
+---
+
+## Exercise 3: Chunked Streaming CSV-to-Parquet ETL Transformer
+
+### Objective
+In enterprise backend architectures, data ingestion microservices receive massive batch uploads (multi-gigabyte CSV/TSV dumps) from external enterprise partners. Attempting to parse these files with a naive `pd.read_csv()` will breach container memory quotas (OOMKilled). Implement a bounded-memory streaming converter that reads large CSV feeds in 10,000-row chunks, applies memory downcasting, and writes compressed columnar Apache Parquet files using PyArrow.
+
+### Production Constraints & Specification
+1. Stream through input data in fixed chunks (`chunksize=10_000`).
+2. Maximum in-memory heap footprint per chunk must remain strictly bounded ($\le 25\text{ MB}$).
+3. Columnar output must use Snappy compression with PyArrow.
+4. Parquet output must match original record count exactly.
+5. Provide end-to-end verification and resource cleanup.
+
+### Production Solution & Verification Code
+
+```python
+import os
+import tempfile
+import numpy as np
+import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+
+class ChunkedParquetTransformer:
+    """
+    Bounded-memory streaming ETL transformer converting CSV datasets
+    to compressed columnar Apache Parquet format.
+    """
+
+    def __init__(self, chunk_size: int = 10_000, compression: str = "snappy") -> None:
+        self.chunk_size = chunk_size
+        self.compression = compression
+
+    def convert_csv_to_parquet(self, csv_path: str, parquet_path: str) -> int:
+        """
+        Reads CSV iteratively in chunks and writes to Parquet via PyArrow ParquetWriter.
+        Returns total number of rows converted.
+        """
+        writer: pq.ParquetWriter | None = None
+        total_rows = 0
+
+        # Generator iterating over chunks with bounded memory
+        chunk_iterator = pd.read_csv(csv_path, chunksize=self.chunk_size)
+
+        try:
+            for chunk_df in chunk_iterator:
+                # Downcast float64 to float32
+                for col in chunk_df.select_dtypes(include=["float64"]).columns:
+                    chunk_df[col] = chunk_df[col].astype(np.float32)
+
+                # Downcast int64 to int32
+                for col in chunk_df.select_dtypes(include=["int64"]).columns:
+                    chunk_df[col] = chunk_df[col].astype(np.int32)
+
+                # Convert to Arrow Table
+                table = pa.Table.from_pandas(chunk_df)
+
+                if writer is None:
+                    writer = pq.ParquetWriter(
+                        parquet_path,
+                        schema=table.schema,
+                        compression=self.compression,
+                    )
+                writer.write_table(table)
+                total_rows += len(chunk_df)
+
+        finally:
+            if writer is not None:
+                writer.close()
+
+        return total_rows
+
+
+def test_exercise_03() -> None:
+    print("[*] Running Exercise 3: Chunked Streaming CSV-to-Parquet Transformer...")
+    temp_dir = tempfile.gettempdir()
+    csv_file = os.path.join(temp_dir, "test_input_stream.csv")
+    parquet_file = os.path.join(temp_dir, "test_output_stream.parquet")
+
+    total_records = 30_000
+    np.random.seed(42)
+
+    # 1. Create synthetic CSV file
+    raw_df = pd.DataFrame({
+        "transaction_id": np.arange(100000, 100000 + total_records),
+        "user_id": np.random.randint(1, 5000, size=total_records),
+        "amount": np.random.uniform(5.0, 500.0, size=total_records),
+        "fee": np.random.uniform(0.1, 5.0, size=total_records),
+    })
+    raw_df.to_csv(csv_file, index=False)
+    csv_size_kb = os.path.getsize(csv_file) / 1024.0
+
+    # 2. Execute streaming conversion
+    transformer = ChunkedParquetTransformer(chunk_size=10_000)
+    converted_count = transformer.convert_csv_to_parquet(csv_file, parquet_file)
+
+    parquet_size_kb = os.path.getsize(parquet_file) / 1024.0
+    compression_ratio = (1.0 - (parquet_size_kb / csv_size_kb)) * 100.0
+
+    print(f"CSV Size: {csv_size_kb:.2f} KB | Parquet Size: {parquet_size_kb:.2f} KB | Disk Saved: {compression_ratio:.2f}%")
+
+    # 3. Read back Parquet metadata and verify
+    pq_reader = pq.ParquetFile(parquet_file)
+    actual_rows = pq_reader.metadata.num_rows
+    actual_row_groups = pq_reader.num_row_groups
+    pq_reader.close()
+
+    assert converted_count == total_records, f"Row count mismatch: {converted_count} vs {total_records}"
+    assert actual_rows == total_records, "Parquet metadata row count mismatch"
+    assert actual_row_groups == 3, f"Expected 3 row groups (30k / 10k), got {actual_row_groups}"
+    print("[+] Exercise 3 Passed: Streaming conversion and columnar Parquet verified.")
+
+    # 4. Clean up files
+    for path in [csv_file, parquet_file]:
+        if os.path.exists(path):
+            os.remove(path)
+    print("[+] Cleaned up temporary test files.")
+
+
+if __name__ == "__main__":
+    test_exercise_03()
+```
