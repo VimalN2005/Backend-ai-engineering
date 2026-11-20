@@ -54,3 +54,68 @@ class OutboxEvent:
     status: str = "PENDING"  # PENDING, PUBLISHED
     created_at: float = field(default_factory=time.time)
     published_at: Optional[float] = None
+
+
+# =====================================================================
+# 2. Transactional Outbox Pattern & CDC Engine
+# =====================================================================
+
+class KafkaEventBus:
+    """Simulated Apache Kafka partitioned broker."""
+    def __init__(self):
+        self.topics: Dict[str, List[Dict[str, Any]]] = {}
+
+    def publish(self, topic: str, key: str, payload: Dict[str, Any], headers: Optional[Dict[str, str]] = None) -> int:
+        if topic not in self.topics:
+            self.topics[topic] = []
+        record = {
+            "key": key,
+            "payload": payload,
+            "headers": headers or {},
+            "offset": len(self.topics[topic]),
+            "timestamp": time.time()
+        }
+        self.topics[topic].append(record)
+        return record["offset"]
+
+
+class OrderDatabase:
+    """Simulates PostgreSQL orders_db with ACID outbox transaction."""
+    def __init__(self):
+        self.orders: Dict[str, OrderRecord] = {}
+        self.outbox: List[OutboxEvent] = []
+
+    def save_order_with_outbox(self, order: OrderRecord, event_type: str, payload: Dict[str, Any]) -> OutboxEvent:
+        """Atomic Local ACID Transaction: saves order entity and outbox event."""
+        self.orders[order.order_id] = order
+        event = OutboxEvent(
+            event_id=f"evt_{uuid.uuid4().hex[:8]}",
+            aggregate_type="Order",
+            aggregate_id=order.order_id,
+            event_type=event_type,
+            payload=payload
+        )
+        self.outbox.append(event)
+        return event
+
+
+class DebeziumCDCRelay:
+    """Change Data Capture (CDC) worker polling outbox tables and publishing to Kafka."""
+    def __init__(self, db: OrderDatabase, bus: KafkaEventBus):
+        self.db = db
+        self.bus = bus
+
+    def poll_and_relay(self, batch_size: int = 10) -> int:
+        pending = [e for e in self.db.outbox if e.status == "PENDING"][:batch_size]
+        relayed = 0
+        for event in pending:
+            self.bus.publish(
+                topic="orders.events",
+                key=event.aggregate_id,
+                payload=event.payload,
+                headers={"event_id": event.event_id, "event_type": event.event_type}
+            )
+            event.status = "PUBLISHED"
+            event.published_at = time.time()
+            relayed += 1
+        return relayed
