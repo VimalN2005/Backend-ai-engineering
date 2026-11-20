@@ -95,12 +95,12 @@ Track your daily commits and milestones. Keep the streak unbroken! 🔥
 - [x] **Day 72**: Monolith to Microservices: Service Boundaries, API Gateways & Saga Pattern
 - [x] **Day 73**: Distributed Systems: Distributed Transactions, Idempotency & Clocks
 - [x] **Day 74**: Distributed Resilience: Circuit Breakers, Exponential Backoff & Jitter
-- [ ] **Day 75**: **Capstone Project 3: Event-Driven Microservices Backend**
+- [x] **Day 75**: **Capstone Project 3: Event-Driven Microservices Backend**
 
 ---
 
 ### Phase 6: ML Engineering, LLMs, RAG, AI Agents & Career Launch (Days 76–90)
-- [ ] **Day 76**: ML Engineering Foundation: NumPy & Pandas for High-Speed Backend ETL
+- [x] **Day 76**: ML Engineering Foundation: NumPy & Pandas for High-Speed Backend ETL
 - [ ] **Day 77**: Scikit-Learn Production Pipelines, Feature Engineering & ColumnTransformers
 - [ ] **Day 78**: Model Serialization, Secure Packaging (Joblib/ONNX) & Latency Benchmarks
 - [ ] **Day 79**: FastAPI Model Serving: Dynamic Batching, In-Memory Inference & Caching
