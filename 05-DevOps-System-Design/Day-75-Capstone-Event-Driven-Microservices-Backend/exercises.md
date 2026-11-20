@@ -216,3 +216,83 @@ if __name__ == "__main__":
     assert payment_done is False, "Payment must be compensated on shipping timeout"
     print("Exercise 2: Timed Saga Coordinator and Timeout Compensation verified successfully!")
 ```
+
+
+---
+
+## Exercise 3: OpenTelemetry Distributed Trace Context Propagator
+
+### Scenario
+An end-to-end distributed transaction traverses an API Gateway, Order Service, and Kafka Event Backbone. To provide full visibility in Jaeger/Datadog, each service must propagate the W3C `traceparent` context header across both HTTP requests and Kafka message headers.
+
+### Requirements
+1. Implement a `W3CTraceContext` parser and generator:
+   - Format: `version-trace_id-parent_id-trace_flags` (e.g. `00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01`).
+2. Provide `create_child_span()` which preserves the `trace_id` while generating a new 64-bit hexadecimal `span_id`.
+3. Propagate context from an HTTP header into a Kafka Record header, verifying that the entire asynchronous pipeline shares the exact same `trace_id`.
+
+### Solution
+
+```python
+"""
+Exercise 3 Solution: OpenTelemetry Distributed Trace Context Propagator
+"""
+from __future__ import annotations
+import uuid
+from dataclasses import dataclass
+from typing import Dict, Optional
+
+
+@dataclass(frozen=True)
+class W3CTraceContext:
+    version: str
+    trace_id: str
+    span_id: str
+    trace_flags: str
+
+    @classmethod
+    def parse_header(cls, header_value: str) -> Optional[W3CTraceContext]:
+        parts = header_value.strip().split("-")
+        if len(parts) == 4 and len(parts[1]) == 32 and len(parts[2]) == 16:
+            return cls(version=parts[0], trace_id=parts[1], span_id=parts[2], trace_flags=parts[3])
+        return None
+
+    def serialize(self) -> str:
+        return f"{self.version}-{self.trace_id}-{self.span_id}-{self.trace_flags}"
+
+    def create_child_span(self) -> W3CTraceContext:
+        """Preserves trace_id, generates new 64-bit span_id."""
+        new_span_id = uuid.uuid4().hex[:16]
+        return W3CTraceContext(
+            version=self.version,
+            trace_id=self.trace_id,
+            span_id=new_span_id,
+            trace_flags=self.trace_flags
+        )
+
+
+# --- Verification Test ---
+if __name__ == "__main__":
+    # Ingress Gateway receives request with incoming W3C traceparent
+    incoming_header = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    gateway_ctx = W3CTraceContext.parse_header(incoming_header)
+
+    assert gateway_ctx is not None
+    assert gateway_ctx.trace_id == "4bf92f3577b34da6a3ce929d0e0e4736"
+    assert gateway_ctx.span_id == "00f067aa0ba902b7"
+
+    # Gateway calls Order Service -> creates child span
+    order_span = gateway_ctx.create_child_span()
+    assert order_span.trace_id == gateway_ctx.trace_id, "Trace ID must remain constant across hops"
+    assert order_span.span_id != gateway_ctx.span_id, "Span ID must be distinct per hop"
+
+    # Order Service publishes to Kafka -> injects into Kafka record headers
+    kafka_span = order_span.create_child_span()
+    kafka_headers = {"traceparent": kafka_span.serialize()}
+
+    # Downstream Notification Worker consumes Kafka message
+    consumed_ctx = W3CTraceContext.parse_header(kafka_headers["traceparent"])
+    assert consumed_ctx.trace_id == gateway_ctx.trace_id, "End-to-end trace ID must survive Kafka serialization"
+
+    print("Exercise 3: W3C Distributed Trace Context propagation verified successfully across HTTP & Kafka!")
+```
