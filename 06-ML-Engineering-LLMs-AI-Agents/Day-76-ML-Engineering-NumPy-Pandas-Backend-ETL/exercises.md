@@ -96,3 +96,87 @@ def test_exercise_01() -> None:
 if __name__ == "__main__":
     test_exercise_01()
 ```
+
+
+---
+
+## Exercise 2: Pure NumPy Vectorized Z-Score Outlier Detector & Scaler
+
+### Objective
+Real-time anomaly detection pipelines frequently must standardize multidimensional feature tensors before passing them to low-latency neural inference networks (e.g. ONNX Runtime). Write a pure NumPy vectorized class `VectorizedFeatureScaler` that scales an $(N, M)$ feature matrix using column means and standard deviations, detects values where $|Z| > \text{threshold}$, and clips outliers to $[-\text{threshold}, +\text{threshold}]$.
+
+### Production Constraints & Specification
+1. Strictly zero Python `for` or `while` loops — all operations must use NumPy ufuncs and broadcasting.
+2. Ensure input array is row-major C-contiguous using `np.ascontiguousarray()`.
+3. Protect against division by zero if standard deviation is zero (replace std $< 10^{-7}$ with $1.0$).
+4. Return normalized matrix, count of clipped outliers, and ensure memory efficiency using `float32`.
+
+### Production Solution & Verification Code
+
+```python
+import numpy as np
+from typing import Tuple
+
+
+class VectorizedFeatureScaler:
+    """
+    SIMD-accelerated Z-score standardization and anomaly bounding engine.
+    """
+
+    def __init__(self, z_threshold: float = 3.0) -> None:
+        self.z_threshold = float(z_threshold)
+
+    def fit_transform_and_clip(self, matrix: np.ndarray) -> Tuple[np.ndarray, int]:
+        """
+        Standardizes feature matrix to zero mean, unit variance and clips anomalies.
+        Returns:
+            (clipped_matrix, outlier_count)
+        """
+        # Ensure C-contiguous float32 buffer
+        arr = np.ascontiguousarray(matrix, dtype=np.float32)
+
+        # Vectorized column means and stds along axis=0
+        means = np.mean(arr, axis=0)
+        stds = np.std(arr, axis=0)
+
+        # Zero-division guard
+        stds_safe = np.where(stds < 1e-7, 1.0, stds)
+
+        # Vectorized broadcasting: (N, M) - (M,)
+        z_scores = (arr - means) / stds_safe
+
+        # Vectorized anomaly mask and count
+        outlier_mask = np.abs(z_scores) > self.z_threshold
+        outlier_count = int(np.count_nonzero(outlier_mask))
+
+        # Vectorized in-place clipping
+        clipped = np.clip(z_scores, -self.z_threshold, self.z_threshold)
+        return clipped, outlier_count
+
+
+def test_exercise_02() -> None:
+    print("[*] Running Exercise 2: Vectorized Feature Scaler...")
+    np.random.seed(42)
+    rows, cols = 50_000, 8
+    raw_data = np.random.normal(loc=50.0, scale=10.0, size=(rows, cols)).astype(np.float32)
+
+    # Inject deliberate extreme anomalies
+    raw_data[0:10, 0] = 5000.0  # Massive spike
+    raw_data[10:20, 1] = -5000.0 # Massive drop
+
+    scaler = VectorizedFeatureScaler(z_threshold=3.0)
+    scaled_data, outliers = scaler.fit_transform_and_clip(raw_data)
+
+    print(f"Processed shape: {scaled_data.shape} | Outliers detected & bounded: {outliers}")
+
+    assert scaled_data.shape == (rows, cols)
+    assert outliers >= 20, f"Expected at least 20 injected anomalies, detected {outliers}"
+    assert np.all(scaled_data >= -3.0), "Found values less than lower threshold"
+    assert np.all(scaled_data <= 3.0), "Found values greater than upper threshold"
+    assert scaled_data.flags["C_CONTIGUOUS"], "Output array is not C-contiguous"
+    print("[+] Exercise 2 Passed: Vectorized scaling and clipping verified.")
+
+
+if __name__ == "__main__":
+    test_exercise_02()
+```
