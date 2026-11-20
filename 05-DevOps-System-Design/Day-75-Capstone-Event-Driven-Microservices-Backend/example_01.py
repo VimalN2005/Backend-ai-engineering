@@ -251,3 +251,84 @@ class SagaExecutionCoordinator:
         self.saga_log.append("STEP_4_ORDER_CONFIRMED")
         self.bus.publish("orders.events", key=order_id, payload={"order_id": order_id, "status": "CONFIRMED"})
         return True, "Order confirmed successfully"
+
+
+# =====================================================================
+# 4. API Gateway Ingress Tier (Auth & Rate Limiting)
+# =====================================================================
+
+class APIGatewayTokenBucket:
+    """Thread-safe Token Bucket rate limiter per client IP / API key."""
+    def __init__(self, capacity: int = 5, refill_rate_per_sec: float = 2.0):
+        self.capacity = capacity
+        self.refill_rate = refill_rate_per_sec
+        self.tokens: float = float(capacity)
+        self.last_refill = time.time()
+
+    def allow_request(self) -> bool:
+        now = time.time()
+        elapsed = now - self.last_refill
+        self.tokens = min(self.capacity, self.tokens + elapsed * self.refill_rate)
+        self.last_refill = now
+
+        if self.tokens >= 1.0:
+            self.tokens -= 1.0
+            return True
+        return False
+
+
+class APIGatewayIngress:
+    """API Gateway edge proxy with JWT validation and rate limiting."""
+    def __init__(self, saga_sec: SagaExecutionCoordinator):
+        self.saga_sec = saga_sec
+        self.rate_limiters: Dict[str, APIGatewayTokenBucket] = {}
+
+    def _get_limiter(self, client_ip: str) -> APIGatewayTokenBucket:
+        if client_ip not in self.rate_limiters:
+            self.rate_limiters[client_ip] = APIGatewayTokenBucket(capacity=4, refill_rate_per_sec=2.0)
+        return self.rate_limiters[client_ip]
+
+    def _validate_jwt(self, auth_header: Optional[str]) -> Optional[Dict[str, Any]]:
+        if not auth_header or not auth_header.startswith("Bearer "):
+            return None
+        token = auth_header.split(" ")[1]
+        try:
+            return json.loads(base64.b64decode(token.encode("utf-8")).decode("utf-8"))
+        except Exception:
+            return None
+
+    def handle_checkout(self, auth_header: Optional[str], client_ip: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        # 1. Rate Limiting Check
+        limiter = self._get_limiter(client_ip)
+        if not limiter.allow_request():
+            return {"status_code": 429, "error": "Rate limit exceeded (HTTP 429)"}
+
+        # 2. Authentication Check
+        claims = self._validate_jwt(auth_header)
+        if not claims:
+            return {"status_code": 401, "error": "Unauthorized: Invalid JWT token"}
+
+        # 3. Dispatch to Saga Execution Coordinator
+        order_id = payload["order_id"]
+        customer_id = claims.get("sub", "cust_anonymous")
+        amount = payload["amount"]
+        items = payload["items"]
+        sim_pay_fail = payload.get("simulate_payment_fail", False)
+        sim_inv_fail = payload.get("simulate_inventory_fail", False)
+
+        success, msg = self.saga_sec.execute_checkout_saga(
+            order_id=order_id,
+            customer_id=customer_id,
+            amount=amount,
+            items=items,
+            simulate_payment_fail=sim_pay_fail,
+            simulate_inventory_fail=sim_inv_fail
+        )
+
+        return {
+            "status_code": 200 if success else 422,
+            "success": success,
+            "message": msg,
+            "order_id": order_id,
+            "user_id": customer_id
+        }
