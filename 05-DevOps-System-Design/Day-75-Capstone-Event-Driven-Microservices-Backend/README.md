@@ -176,3 +176,57 @@ The API Gateway provides a hardened security and ingress boundary:
 2. **Dead-Letter Topics (DLT)**:
    - Unparseable or poison-pill event payloads exceeding 3 retries are published to `orders.DLT`.
    - Alerting triggers in PagerDuty, allowing engineers to inspect the quarantine topic without stalling the main commit log.
+
+
+---
+
+## 8. Deployment Architecture & Kubernetes HPA Autoscaling
+
+```
+PRODUCTION KUBERNETES DEPLOYMENT TOPOLOGY
+Namespace: ecom-prod
+  ├── Deployments:
+  │     ├── api-gateway (Replicas: 3-10, HPA: CPU > 70%)
+  │     ├── order-service (Replicas: 4-16, HPA: CPU > 65% + Kafka Lag)
+  │     ├── payment-service (Replicas: 3-8, HPA: Memory > 75%)
+  │     ├── inventory-service (Replicas: 4-12, HPA: CPU > 70%)
+  │     └── notification-worker (Replicas: 2-6, KEDA ScaledObject: Topic Lag > 500)
+  ├── StatefulSets:
+  │     ├── kafka-cluster (3 Brokers, KRaft Mode, NVMe SSD storage)
+  │     ├── postgres-orders (Primary + Read Replica)
+  │     ├── postgres-payments (Primary + Read Replica)
+  │     └── postgres-inventory (Primary + Read Replica)
+  └── Ingress:
+        └── Nginx Ingress Controller with TLS 1.3 & AWS NLB L4 load balancer
+```
+
+### Autoscaling Policy (KEDA + HPA v2)
+- **HTTP Services**: Scaled using Kubernetes Horizontal Pod Autoscaler based on CPU utilization and incoming HTTP request rate.
+- **Asynchronous Event Consumers**: Scaled using **KEDA (Kubernetes Event-driven Autoscaling)** querying Kafka consumer lag from Prometheus (`kafka_consumergroup_lag`). When topic lag spikes above 500 messages, KEDA scales consumer pods rapidly to match topic partition count.
+
+---
+
+## 9. Distributed Observability (OpenTelemetry & Prometheus)
+
+1. **Distributed Tracing (OpenTelemetry)**:
+   - Ingress Gateway initializes trace context: `traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01`.
+   - Propagated across HTTP headers and Kafka record headers (`KafkaRecord.headers["traceparent"]`).
+   - Visualized in Jaeger/Tempo to identify exact bottleneck spans.
+2. **Prometheus Metrics**:
+   - `http_requests_total{status, service, path}`
+   - `saga_execution_duration_seconds{status="SUCCESS|COMPENSATED"}`
+   - `circuit_breaker_state{name, state="CLOSED|OPEN|HALF_OPEN"}`
+   - `kafka_consumer_lag{topic, partition, consumer_group}`
+
+---
+
+## 10. Performance Benchmarks & Capacity Sizing Matrix
+
+| Metric | Target Specification | Production Sizing / Schedulers |
+| :--- | :--- | :--- |
+| **Peak Ingress Throughput** | 20,000 req/sec | Nginx L7 Ingress + 6 Gateway Replicas |
+| **Kafka Event Throughput** | 100,000 events/sec | 3-node KRaft cluster, 6 partitions per topic |
+| **P50 Checkout Latency** | $\le 18$ ms | Asynchronous Outbox + In-Memory Fast Path |
+| **P99 Checkout Latency** | $\le 65$ ms | Full Jitter Backoff + Circuit Breaker Fast-Fail |
+| **Data Durability Guarantee** | Zero Message Loss (100%) | `acks=all`, `min.insync.replicas=2`, Outbox CDC |
+| **Failure Recovery Time** | $\le 300$ ms | Automatic Backward Saga Compensations |
