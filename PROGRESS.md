@@ -94,7 +94,7 @@ Track your daily commits and milestones. Keep the streak unbroken! 🔥
 - [x] **Day 71**: Apache Kafka: Topics, Partitions, Consumer Groups & Offsets
 - [x] **Day 72**: Monolith to Microservices: Service Boundaries, API Gateways & Saga Pattern
 - [x] **Day 73**: Distributed Systems: Distributed Transactions, Idempotency & Clocks
-- [ ] **Day 74**: Distributed Resilience: Circuit Breakers, Exponential Backoff & Jitter
+- [x] **Day 74**: Distributed Resilience: Circuit Breakers, Exponential Backoff & Jitter
 - [ ] **Day 75**: **Capstone Project 3: Event-Driven Microservices Backend**
 
 ---
