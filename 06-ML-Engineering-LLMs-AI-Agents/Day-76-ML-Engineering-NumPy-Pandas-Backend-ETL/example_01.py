@@ -194,3 +194,132 @@ class StreamingETLPipeline:
                 batch_data["voltage"][:5] = [500.0, 10.0, 600.0, 5.0, 750.0]
 
             yield pd.DataFrame(batch_data)
+
+
+    def process_stream(
+        self, output_parquet_path: str, total_records: int = 50_000
+    ) -> TelemetryBatchStats:
+        """
+        Executes end-to-end chunked ETL:
+        1. Ingests raw batch DataFrame with heavyweight dtypes.
+        2. Compresses memory footprint via type downcasting.
+        3. Extracts and standardizes numerical features using SIMD NumPy vectorization.
+        4. Detects and bounds extreme anomalies.
+        5. Persists transformed batches to columnar Snappy-compressed Parquet.
+        """
+        start_time = time.perf_counter()
+        total_raw_mem = 0
+        total_opt_mem = 0
+        total_outliers = 0
+        records_processed = 0
+
+        parquet_writer: pq.ParquetWriter | None = None
+
+        try:
+            for raw_chunk in self.generate_synthetic_telemetry_stream(total_records=total_records):
+                # 1. Downcast and compress types in Pandas
+                optimized_chunk, raw_mem, opt_mem = MemoryOptimizer.optimize_dataframe(raw_chunk)
+                total_raw_mem += raw_mem
+                total_opt_mem += opt_mem
+
+                # 2. Extract numeric features into contiguous NumPy float32 matrix
+                feature_cols = ["voltage", "temperature", "vibration"]
+                raw_matrix = optimized_chunk[feature_cols].to_numpy(dtype=np.float32)
+
+                # 3. Vectorized Z-Score normalization and outlier clipping
+                normalized_matrix, _, _ = self.feature_extractor.compute_z_score_normalization(raw_matrix)
+                clipped_matrix, clipped_count = self.feature_extractor.vectorized_outlier_filter(normalized_matrix)
+                total_outliers += clipped_count
+
+                # 4. Vectorized rolling convolution on vibration signal
+                rolling_vibe = self.feature_extractor.compute_vectorized_rolling_average(
+                    clipped_matrix[:, 2], window_size=5
+                )
+
+                # 5. Attach engineered features back to DataFrame
+                optimized_chunk["voltage_norm"] = clipped_matrix[:, 0]
+                optimized_chunk["temp_norm"] = clipped_matrix[:, 1]
+                optimized_chunk["vibe_norm"] = clipped_matrix[:, 2]
+                optimized_chunk["vibe_rolling_avg"] = rolling_vibe
+
+                # 6. Stream write to Columnar Apache Parquet via PyArrow
+                arrow_table = pa.Table.from_pandas(optimized_chunk)
+                if parquet_writer is None:
+                    parquet_writer = pq.ParquetWriter(
+                        output_parquet_path,
+                        schema=arrow_table.schema,
+                        compression="snappy",
+                    )
+                parquet_writer.write_table(arrow_table)
+                records_processed += len(raw_chunk)
+
+        finally:
+            if parquet_writer is not None:
+                parquet_writer.close()
+
+        elapsed_ms = (time.perf_counter() - start_time) * 1000.0
+        reduction_pct = (
+            ((total_raw_mem - total_opt_mem) / total_raw_mem) * 100.0
+            if total_raw_mem > 0
+            else 0.0
+        )
+
+        return TelemetryBatchStats(
+            total_records=records_processed,
+            raw_memory_bytes=total_raw_mem,
+            optimized_memory_bytes=total_opt_mem,
+            memory_reduction_pct=reduction_pct,
+            outliers_clipped=total_outliers,
+            processing_time_ms=elapsed_ms,
+        )
+
+
+def main() -> None:
+    print("================================================================================")
+    print("DAY 76: PRODUCTION HIGH-SPEED NUMPY & PANDAS BACKEND ETL PIPELINE")
+    print("================================================================================")
+
+    output_parquet = "telemetry_processed_output.parquet"
+    total_records = 50_000
+
+    pipeline = StreamingETLPipeline(chunk_size=10_000)
+    print(f"[*] Ingesting and transforming {total_records:,} sensor telemetry events...")
+
+    stats = pipeline.process_stream(output_parquet_path=output_parquet, total_records=total_records)
+
+    # Read back and inspect Parquet metadata and shape
+    parquet_file = pq.ParquetFile(output_parquet)
+    disk_size_kb = os.path.getsize(output_parquet) / 1024.0
+    num_row_groups = parquet_file.num_row_groups
+    num_cols = len(parquet_file.schema)
+    num_rows = parquet_file.metadata.num_rows
+    parquet_file.close()
+
+    print("\n--- Pipeline Execution Metrics ---")
+    print(f"Total Records Processed   : {stats.total_records:,}")
+    print(f"Raw In-Memory Size        : {stats.raw_memory_bytes / 1024.0:.2f} KB")
+    print(f"Optimized In-Memory Size  : {stats.optimized_memory_bytes / 1024.0:.2f} KB")
+    print(f"RAM Memory Reduction      : {stats.memory_reduction_pct:.2f}%")
+    print(f"Outliers Clipped (Z > 3.0): {stats.outliers_clipped:,}")
+    print(f"Snappy Parquet Disk Size  : {disk_size_kb:.2f} KB")
+    print(f"Parquet Row Groups        : {num_row_groups}")
+    print(f"Parquet Total Schema Cols : {num_cols}")
+    print(f"End-to-End Latency        : {stats.processing_time_ms:.2f} ms")
+    print(f"Throughput                : {(stats.total_records / (stats.processing_time_ms / 1000.0)):,.0f} records/sec")
+
+    # Production Integrity Verifications
+    assert stats.total_records == total_records, f"Record count mismatch: {stats.total_records}"
+    assert stats.memory_reduction_pct >= 50.0, f"Expected >=50% RAM reduction, got {stats.memory_reduction_pct}%"
+    assert stats.outliers_clipped > 0, "Expected outliers to be clipped by Z-score filter"
+    assert num_rows == total_records, "Parquet row count mismatch"
+    print("\n[+] Verification Passed: All data engineering assertions satisfied.")
+
+    # Clean up parquet file
+    if os.path.exists(output_parquet):
+        os.remove(output_parquet)
+    print("[+] Cleaned up temporary parquet artifact.")
+    print("================================================================================")
+
+
+if __name__ == "__main__":
+    main()
