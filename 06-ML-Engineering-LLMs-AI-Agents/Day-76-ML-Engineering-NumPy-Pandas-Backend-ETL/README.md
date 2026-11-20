@@ -104,3 +104,74 @@ Modern CPUs load data into cache lines (typically 64 bytes wide). If your backen
 2. The remaining bytes are discarded before the next element is requested.
 3. This creates a **$10\times$ to $50\times$ slowdown** purely due to CPU memory bus saturation and cache thrashing.
 NumPy allows inspecting this via `arr.strides` and `arr.flags['C_CONTIGUOUS']`. Always ensure that transformation loops operate along the contiguous dimension.
+
+
+---
+
+## 4. SIMD Vectorization & Universal Functions (UFuncs) Mechanics
+
+Modern x86_64 and ARM processors contain Single Instruction, Multiple Data (SIMD) instruction sets (such as AVX-2, AVX-512, and ARM Neon). SIMD registers can hold 256 or 512 bits of data simultaneously:
+- In a 512-bit register, the CPU can store sixteen 32-bit floats (`16 x 32 = 512 bits`).
+- A single clock cycle instruction (e.g., `_mm512_add_ps` or `_mm512_fmadd_ps`) executes arithmetic across all 16 floats simultaneously.
+
+### Universal Functions (UFuncs)
+NumPy ufuncs (such as `np.add`, `np.multiply`, `np.exp`, `np.log`, `np.sin`) are compiled C-level loops with built-in hardware vectorization:
+1. **Loop Unrolling & Vectorization**: When operating over contiguous memory, the compiler unrolls the inner loop into vector assembly instructions.
+2. **Type Dispatch**: The ufunc inspects the array dtypes and selects the optimal specialized C loop without Python object overhead.
+3. **GIL Release**: During intensive mathematical calculations, NumPy releases the Python GIL, allowing true multi-core parallel scaling when paired with OpenMP or BLAS/LAPACK threads (e.g., OpenBLAS or Intel MKL).
+
+```
+Scalar Loop (Pure Python):
+  Clock Cycle 1: Fetch Object -> Unbox A[0] -> Unbox B[0] -> Add -> Box Result C[0]
+  Clock Cycle 2: Fetch Object -> Unbox A[1] -> Unbox B[1] -> Add -> Box Result C[1]
+  ...
+  Takes 16 separate cycles + boxing overhead for 16 numbers.
+
+SIMD Vectorized UFunc (NumPy C-Backend):
+  Clock Cycle 1: Load 16 floats into ZMM0 -> Load 16 floats into ZMM1 -> _mm512_add_ps -> Store to ZMM2
+  Executes all 16 additions in a single hardware cycle!
+```
+
+---
+
+## 5. The NumPy Array Broadcasting Specification & Rules
+
+Broadcasting enables vectorized operations between arrays of different shapes without copying data in memory. This eliminates multi-gigabyte memory allocations during backend feature normalizations (e.g., subtracting column means from an entire matrix).
+
+### The Official Broadcasting Rules
+When operating on two arrays $A$ and $B$, NumPy compares their shapes element-wise, starting from the trailing (rightmost) dimensions and moving leftward:
+1. Two dimensions are compatible if:
+   - They are equal, or
+   - One of them is 1.
+2. If neither condition is met, a `ValueError: operands could not be broadcast together` is thrown.
+3. If an array has fewer dimensions than the other, its shape is prepended with dimensions of size 1 until the dimensions match.
+4. When a dimension is 1, NumPy uses a **stride of 0** along that axis. It repeatedly references the exact same memory address rather than duplicating data, achieving $O(1)$ memory overhead!
+
+### Broadcasting Examples in Feature Normalization
+Suppose we have a batch of $N = 100,000$ telemetry events with $M = 8$ feature columns:
+- Input data shape: `(100000, 8)`
+- Column means shape: `(8,)`
+- Shape alignment:
+  - Array A: `100000 x 8`
+  - Array B: `     1 x 8` (leading dimension padded with 1)
+- The dimension sizes `(100000, 8)` and `(1, 8)` match rule 1 (`100000 == 100000` via broadcast, `8 == 8`).
+- Calculation `A - B` executes at hardware speed with zero duplicate allocations.
+
+---
+
+## 6. Compute-Bound vs Memory-Bandwidth Bound Optimization
+
+Backend data engineers frequently make the mistake of assuming that all numerical algorithms are CPU compute-bound. In high-speed ETL systems, the vast majority of operations are actually **memory-bandwidth bound**.
+
+### Roofline Model for Backend Data Pipelines
+The Roofline Model defines maximum achievable operational performance ($P$) as:
+$$P = \min\left(\text{Peak Performance}, \text{Operational Intensity} \times \text{Memory Bandwidth}\right)$$
+Where:
+- **Operational Intensity** is the number of FLOPs (floating-point operations) executed per byte transferred from DRAM.
+- Simple ETL operations (e.g., `z = x + y`, scaling, filtering) perform 1 FLOP per 8–16 bytes read. Their operational intensity is low ($\approx 0.1 \text{ FLOP/byte}$).
+- Consequently, the CPU execution units are starved waiting for RAM to deliver bytes across the memory bus (typically 50–100 GB/s on modern DDR5 servers).
+
+### Strategic Optimization Imperatives
+1. **Reduce Memory Footprint**: Downcasting standard `float64` (8 bytes) to `float32` (4 bytes) doubles the effective throughput of memory-bandwidth bound operations because half as many physical bytes traverse the memory bus.
+2. **In-Place Operations**: Utilize `out=` parameters in NumPy functions (e.g., `np.add(a, b, out=a)`) to eliminate intermediary array allocations and reduce memory bus pressure.
+3. **Kernel Fusion**: Combine successive element-wise operations to keep intermediate values in CPU registers rather than writing them back to main memory.
