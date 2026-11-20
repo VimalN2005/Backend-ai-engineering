@@ -110,3 +110,109 @@ if __name__ == "__main__":
 
     print("Exercise 1: Resilient Outbox CDC Crash Recovery verified successfully!")
 ```
+
+
+---
+
+## Exercise 2: Distributed Saga State Machine with Step Timeout
+
+### Scenario
+A multi-step Saga orchestrates an online order across Payment, Inventory, and Shipping. If an external service hangs without returning a response, the Saga coordinator must not wait forever. You must implement a **Timed Saga Coordinator** that enforces step-level deadlines, cancels hanging steps, and initiates reverse compensation.
+
+### Requirements
+1. Implement a `TimedSagaCoordinator`:
+   - Enforces a per-step timeout (e.g. 50ms).
+2. If a service action does not return within the deadline:
+   - Mark the step as `TIMED_OUT`.
+   - Abort forward execution.
+   - Execute compensating transactions for all previously completed steps in reverse order.
+
+### Solution
+
+```python
+"""
+Exercise 2 Solution: Timed Saga Coordinator with Reverse Compensation
+"""
+from __future__ import annotations
+import time
+from dataclasses import dataclass
+from typing import Callable, List, Tuple
+
+
+@dataclass
+class SagaStepDef:
+    name: str
+    action: Callable[[], bool]
+    compensation: Callable[[], bool]
+    timeout_sec: float = 0.05
+
+
+class TimedSagaCoordinator:
+    def __init__(self):
+        self.log: List[str] = []
+
+    def execute_saga(self, steps: List[SagaStepDef]) -> Tuple[bool, str]:
+        completed: List[SagaStepDef] = []
+
+        for step in steps:
+            self.log.append(f"EXEC:{step.name}")
+            start_t = time.time()
+            try:
+                # Simulated timed execution
+                success = step.action()
+                elapsed = time.time() - start_t
+                if elapsed > step.timeout_sec:
+                    raise TimeoutError(f"Step {step.name} exceeded deadline {step.timeout_sec}s (took {elapsed:.3f}s)")
+                
+                if success:
+                    completed.append(step)
+                    self.log.append(f"SUCCESS:{step.name}")
+                else:
+                    raise RuntimeError("Returned False")
+            except Exception as exc:
+                self.log.append(f"FAILED:{step.name}:{exc}")
+                self._compensate(completed)
+                return False, f"Saga aborted at {step.name}: {exc}"
+
+        return True, "Saga completed"
+
+    def _compensate(self, completed: List[SagaStepDef]) -> None:
+        for step in reversed(completed):
+            self.log.append(f"COMPENSATING:{step.name}")
+            step.compensation()
+            self.log.append(f"COMPENSATED:{step.name}")
+
+
+# --- Verification Test ---
+if __name__ == "__main__":
+    payment_done = False
+    inventory_done = False
+
+    def do_payment():
+        nonlocal payment_done
+        payment_done = True
+        return True
+
+    def undo_payment():
+        nonlocal payment_done
+        payment_done = False
+        return True
+
+    def do_hanging_shipping():
+        # Exceeds 0.05s timeout
+        time.sleep(0.08)
+        return True
+
+    steps = [
+        SagaStepDef("Payment", do_payment, undo_payment, timeout_sec=0.05),
+        SagaStepDef("Shipping", do_hanging_shipping, lambda: True, timeout_sec=0.05)
+    ]
+
+    coord = TimedSagaCoordinator()
+    ok, msg = coord.execute_saga(steps)
+
+    assert ok is False
+    assert "exceeded deadline" in msg
+    assert payment_done is False, "Payment must be compensated on shipping timeout"
+    print("Exercise 2: Timed Saga Coordinator and Timeout Compensation verified successfully!")
+```
