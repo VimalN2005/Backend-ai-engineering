@@ -332,3 +332,121 @@ class APIGatewayIngress:
             "order_id": order_id,
             "user_id": customer_id
         }
+
+
+# =====================================================================
+# 5. Verification Scenarios & Main Entrypoint
+# =====================================================================
+
+def demo_end_to_end_capstone_flow():
+    print("\n--- 1. CAPSTONE HAPPY PATH CHECKOUT & SAGA EXECUTION ---")
+    bus = KafkaEventBus()
+    order_db = OrderDatabase()
+    payment_svc = PaymentService()
+    inventory_svc = InventoryService(initial_stock={"LAPTOP-PRO": 10, "MOUSE-WIRELESS": 25})
+    cdc = DebeziumCDCRelay(order_db, bus)
+
+    sec = SagaExecutionCoordinator(order_db, payment_svc, inventory_svc, bus)
+    gateway = APIGatewayIngress(sec)
+
+    # Valid JWT token
+    jwt_claims = {"sub": "cust_vimal_99", "role": "customer"}
+    jwt_token = "Bearer " + base64.b64encode(json.dumps(jwt_claims).encode("utf-8")).decode("utf-8")
+
+    # Checkout Request
+    payload = {
+        "order_id": "ord_1001",
+        "amount": 1250.00,
+        "items": [{"sku": "LAPTOP-PRO", "qty": 1}, {"sku": "MOUSE-WIRELESS", "qty": 2}]
+    }
+
+    resp = gateway.handle_checkout(jwt_token, "192.168.1.100", payload)
+    print(f"Gateway Response: Status {resp['status_code']} - {resp['message']}")
+
+    assert resp["status_code"] == 200
+    assert resp["success"] is True
+    # Verify state across microservices
+    assert order_db.orders["ord_1001"].status == OrderStatus.CONFIRMED
+    assert payment_svc.transactions["ord_1001"]["status"] == PaymentStatus.CAPTURED
+    assert inventory_svc.stock["LAPTOP-PRO"] == 9
+    assert inventory_svc.stock["MOUSE-WIRELESS"] == 23
+
+    # CDC Engine relays outbox events to Kafka
+    relayed_count = cdc.poll_and_relay()
+    assert relayed_count == 1
+    assert len(bus.topics["orders.events"]) == 2  # 1 from outbox, 1 from final confirmation
+    print(f"CDC successfully relayed {relayed_count} outbox event to Kafka.")
+    print("Happy Path Checkout verified successfully!")
+
+
+def demo_compensation_on_inventory_failure():
+    print("\n--- 2. CAPSTONE SAGA BACKWARD COMPENSATION ON INVENTORY FAILURE ---")
+    bus = KafkaEventBus()
+    order_db = OrderDatabase()
+    payment_svc = PaymentService()
+    inventory_svc = InventoryService(initial_stock={"PHONE-FLAGSHIP": 1})
+
+    sec = SagaExecutionCoordinator(order_db, payment_svc, inventory_svc, bus)
+    gateway = APIGatewayIngress(sec)
+
+    jwt_token = "Bearer " + base64.b64encode(json.dumps({"sub": "cust_bob_44"}).encode("utf-8")).decode("utf-8")
+
+    # Request exceeds stock (requests 5, only 1 available)
+    payload = {
+        "order_id": "ord_2002",
+        "amount": 4500.00,
+        "items": [{"sku": "PHONE-FLAGSHIP", "qty": 5}]
+    }
+
+    resp = gateway.handle_checkout(jwt_token, "192.168.1.101", payload)
+    print(f"Gateway Response on Stock Exhaustion: Status {resp['status_code']} - {resp['message']}")
+
+    assert resp["status_code"] == 422
+    assert resp["success"] is False
+    # Verify backward compensation:
+    # 1. Order must be marked CANCELLED
+    assert order_db.orders["ord_2002"].status == OrderStatus.CANCELLED
+    # 2. Payment must have been REFUNDED
+    assert payment_svc.transactions["ord_2002"]["status"] == PaymentStatus.REFUNDED
+    # 3. Stock must remain intact at 1
+    assert inventory_svc.stock["PHONE-FLAGSHIP"] == 1
+    print("Backward compensation verified: Payment refunded and Order cancelled cleanly!")
+
+
+def demo_gateway_rate_limiting():
+    print("\n--- 3. API GATEWAY TOKEN BUCKET RATE LIMITING DEMO ---")
+    bus = KafkaEventBus()
+    order_db = OrderDatabase()
+    payment_svc = PaymentService()
+    inventory_svc = InventoryService(initial_stock={"BOOK": 100})
+    sec = SagaExecutionCoordinator(order_db, payment_svc, inventory_svc, bus)
+    gateway = APIGatewayIngress(sec)
+
+    jwt_token = "Bearer " + base64.b64encode(json.dumps({"sub": "cust_rate_tester"}).encode("utf-8")).decode("utf-8")
+
+    payload = {"order_id": "ord_burst", "amount": 20.0, "items": [{"sku": "BOOK", "qty": 1}]}
+
+    # Burst 5 requests from same IP (capacity is 4)
+    status_codes = []
+    for i in range(5):
+        p = dict(payload)
+        p["order_id"] = f"ord_burst_{i}"
+        resp = gateway.handle_checkout(jwt_token, "10.0.0.50", p)
+        status_codes.append(resp["status_code"])
+
+    print(f"Burst request status codes: {status_codes}")
+    assert 429 in status_codes
+    assert status_codes.count(200) == 4
+    print("API Gateway token bucket successfully throttled traffic surge with HTTP 429!")
+
+
+if __name__ == "__main__":
+    print("=" * 70)
+    print("RUNNING CAPSTONE 3: EVENT-DRIVEN MICROSERVICES BACKEND SIMULATOR")
+    print("=" * 70)
+    demo_end_to_end_capstone_flow()
+    demo_compensation_on_inventory_failure()
+    demo_gateway_rate_limiting()
+    print("\n" + "=" * 70)
+    print("ALL CAPSTONE 3 EVENT-DRIVEN MICROSERVICES TESTS PASSED CLEANLY!")
+    print("=" * 70)
