@@ -101,7 +101,7 @@ Track your daily commits and milestones. Keep the streak unbroken! 🔥
 
 ### Phase 6: ML Engineering, LLMs, RAG, AI Agents & Career Launch (Days 76–90)
 - [x] **Day 76**: ML Engineering Foundation: NumPy & Pandas for High-Speed Backend ETL
-- [ ] **Day 77**: Scikit-Learn Production Pipelines, Feature Engineering & ColumnTransformers
+- [x] **Day 77**: Scikit-Learn Production Pipelines, Feature Engineering & ColumnTransformers
 - [ ] **Day 78**: Model Serialization, Secure Packaging (Joblib/ONNX) & Latency Benchmarks
 - [ ] **Day 79**: FastAPI Model Serving: Dynamic Batching, In-Memory Inference & Caching
 - [ ] **Day 80**: MLflow: Experiment Tracking, Model Registry & Version Control
