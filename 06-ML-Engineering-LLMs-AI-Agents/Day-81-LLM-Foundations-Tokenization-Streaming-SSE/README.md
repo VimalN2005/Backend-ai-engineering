@@ -137,3 +137,134 @@ $$\text{Memory} = 2 \times 80 \times 8 \times 128 \times 8192 \times 16 \times 2
 $$\text{Memory} = 42,949,672,960 \text{ bytes} \approx \mathbf{40.0\text{ GB VRAM}}$$
 
 The KV-Cache for active requests alone consumes 40 GB of GPU RAM, competing directly with model weights for physical memory! This mathematical reality explains why LLM providers charge strictly per input and output token and enforce rigid context window limits.
+
+
+---
+
+## 5. Bounded Context Window Management Strategies
+
+Because LLM context windows are strictly finite, backend systems running multi-turn chat applications or retrieval-augmented generation (RAG) must dynamically budget and prune tokens before submitting requests to the model.
+
+### 5.1 The Token Budget Allocation Framework
+A robust production LLM prompt adheres to a partitioned token budget:
+
+$$L_{\text{budget}} = T_{\text{system}} + T_{\text{tools}} + T_{\text{rag\_context}} + T_{\text{chat\_history}} + T_{\text{user\_query}} + T_{\text{completion\_reserve}}$$
+
+```
++-------------------------------------------------------------------------------------------------+
+|                                    TOTAL CONTEXT WINDOW BUDGET                                  |
++------------------------------------+--------------------------+--------------------+------------+
+| System Prompt & Tool Schemas       | RAG Retrieved Documents  | Chat Conversation  | Reserved   |
+| (Pinned & Immutable)               | (Dynamic Injection)      | History Buffer     | Completion |
+| ~1,000 tokens                      | ~4,000 tokens            | ~2,000 tokens      | 1,000 toks |
++------------------------------------+--------------------------+--------------------+------------+
+```
+
+### 5.2 Context Pruning & Retention Algorithms
+When conversation history grows beyond the allocated budget, three strategies are deployed:
+
+1. **Sliding Window Buffer with System Prompt Pinning**:
+   - The System Prompt (`role: system`) is **strictly pinned** at the head of the sequence to ensure instructions, guardrails, and JSON schemas remain active.
+   - Older messages from the conversation history are evicted on a First-In, First-Out (FIFO) basis while preserving message turn pairs (`user` + `assistant`).
+2. **Context Summarization & Compaction**:
+   - When the conversation history exceeds a watermark (e.g. 75% of context window), a lightweight background LLM (or summarizer agent) condenses older turns into an executive summary bullet list, replacing 20 older turns with a single concise summary message.
+3. **Selective RAG Truncation**:
+   - Rather than dropping user conversational turns, lower-ranking retrieved document chunks are discarded based on similarity score thresholds.
+
+---
+
+## 6. Real-Time Streaming Delivery & Server-Sent Events (SSE)
+
+In non-streaming requests, the user or downstream service waits until the entire completion is generated before receiving any bytes. For a 500-token completion generating at 30 tokens/second, this incurs a frustrating **16.6-second delay** ($T_{\text{wait}} = \text{TTFT} + 500/30$).
+
+Streaming APIs transform this experience: tokens are transmitted to the client the millisecond they are generated. The user sees text immediately (sub-300ms **Time-To-First-Token (TTFT)**), radically boosting perceived responsiveness and conversational fluidity.
+
+### 6.1 Why Server-Sent Events (SSE) Over WebSockets?
+For unidirectional LLM completion streams (where the server pushes text chunks to the client over an established request), **Server-Sent Events (W3C standard)** offers significant architectural advantages over WebSockets:
+
+| Architectural Metric | Server-Sent Events (SSE) | WebSockets (WS) |
+| :--- | :--- | :--- |
+| **Protocol** | Standard HTTP/1.1 or HTTP/2 | Custom WS/WSS TCP handshake |
+| **Directionality** | Unidirectional (Server $\to$ Client) | Full Duplex (Bidirectional) |
+| **Proxy / Firewall Traversal** | Seamless (Standard port 80/443, standard headers) | Often blocked or terminated by enterprise middleboxes |
+| **Auto-Reconnection** | Built-in browser reconnection & `Last-Event-ID` | Requires manual application-level reconnection |
+| **Load Balancer Support** | Native HTTP load balancing & sticky sessions | Requires persistent stateful socket connection tracking |
+| **Complexity & Overhead** | Low (Plain text event framing) | Medium (Frame masking, ping/pong heartbeats) |
+
+### 6.2 The W3C Server-Sent Events Protocol Specification
+SSE operates over an open HTTP connection using `Transfer-Encoding: chunked`. The response must specify the following HTTP headers:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: text/event-stream; charset=utf-8
+Cache-Control: no-cache, no-transform
+Connection: keep-alive
+X-Accel-Buffering: no
+```
+
+> [!IMPORTANT]
+> The header `X-Accel-Buffering: no` is mandatory when proxying through Nginx or AWS Application Load Balancers (ALB). By default, reverse proxies buffer small HTTP responses until a 4KB/16KB threshold is reached. Disabling proxy buffering ensures individual token frames are forwarded immediately without latency.
+
+### 6.3 SSE Frame Grammar
+An SSE stream consists of UTF-8 encoded text separated by double newlines (`\n\n`). Each event block can contain:
+
+```text
+event: <event_name>\n
+id: <message_id>\n
+retry: <milliseconds>\n
+data: <payload_string>\n\n
+```
+
+Keep-alive heartbeats are sent as comment lines starting with a colon (`: ping\n\n`) to prevent intermediate firewall timeouts during silent generation periods.
+
+---
+
+## 7. Multibyte UTF-8 Boundary Reassembly
+
+In Byte-Level BPE, a token does not necessarily align with complete UTF-8 character boundaries. A complex Unicode glyph (such as an emoji 🚀 or Hindi character 'क') consists of 3 to 4 raw bytes.
+
+If the LLM emits a token that ends on an incomplete byte sequence (e.g. 2 bytes of a 3-byte character) and the backend attempts to decode it immediately via `.decode("utf-8")`, a `UnicodeDecodeError` is raised!
+
+```
+Character: '🚀' (UTF-8 Bytes: 0xF0, 0x9F, 0x99, 0x80)
+
+Token 1 emits:  [0xF0, 0x9F]        <-- INCOMPLETE (Raises UnicodeDecodeError if decoded alone)
+Token 2 emits:  [0x99, 0x80]        <-- Completes the character!
+```
+
+### Production UTF-8 Stream Decoder Pattern
+Production backend streaming servers maintain an incremental byte buffer:
+```python
+# PRODUCTION PATTERN: Incremental UTF-8 Decoding
+import codecs
+
+decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
+# Feeds raw chunk bytes; emits only fully formed characters, buffering remaining bytes:
+complete_text = decoder.decode(chunk_bytes, final=False)
+```
+
+---
+
+## 8. OpenAI-Compatible SSE Streaming Payload Format
+
+Modern AI engineering platforms (vLLM, Ollama, LangChain, LlamaIndex, OpenAI SDK) adhere to the standard OpenAI-compatible streaming response schema.
+
+### Wire Format of Streaming Chunks
+
+```http
+data: {"id":"chatcmpl-9A1B2C","object":"chat.completion.chunk","created":1700000000,"model":"gpt-4o","choices":[{"index":0,"delta":{"role":"assistant","content":""},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-9A1B2C","object":"chat.completion.chunk","created":1700000000,"model":"gpt-4o","choices":[{"index":0,"delta":{"content":"Hello"},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-9A1B2C","object":"chat.completion.chunk","created":1700000000,"model":"gpt-4o","choices":[{"index":0,"delta":{"content":"!"},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-9A1B2C","object":"chat.completion.chunk","created":1700000000,"model":"gpt-4o","choices":[{"index":0,"delta":{},"logprobs":null,"finish_reason":"stop"}]}
+
+data: [DONE]
+
+```
+
+1. **Initial Chunk**: Emits `delta: {"role": "assistant"}` to announce the respondent role.
+2. **Intermediate Chunks**: Emit `delta: {"content": "<token_text>"}` with `finish_reason: null`.
+3. **Final Completion Chunk**: Emits empty delta `{}` with `finish_reason: "stop"` (or `"length"` if truncated).
+4. **Sentinel Termination Frame**: Emits `data: [DONE]\n\n` instructing the client event listener to close the stream.
