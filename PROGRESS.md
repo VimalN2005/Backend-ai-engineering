@@ -106,7 +106,7 @@ Track your daily commits and milestones. Keep the streak unbroken! 🔥
 - [x] **Day 79**: FastAPI Model Serving: Dynamic Batching, In-Memory Inference & Caching
 - [x] **Day 80**: MLflow: Experiment Tracking, Model Registry & Version Control
 - [x] **Day 81**: LLM Foundations: Tokenization, Context Windows, Streaming APIs & SSE
-- [ ] **Day 82**: Vector Embeddings, Similarity Search & Vector Databases (pgvector, Qdrant)
+- [x] **Day 82**: Vector Embeddings, Similarity Search & Vector Databases (pgvector, Qdrant)
 - [ ] **Day 83**: RAG Architecture 101: Ingestion, Chunking, Indexing & Context Injection
 - [ ] **Day 84**: Advanced RAG: Hybrid Search, Cross-Encoder Reranking & Metadata Filtering
 - [ ] **Day 85**: RAG Evaluation with Ragas Framework & Semantic Response Caching
