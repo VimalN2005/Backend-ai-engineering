@@ -110,7 +110,7 @@ Track your daily commits and milestones. Keep the streak unbroken! 🔥
 - [x] **Day 83**: RAG Architecture 101: Ingestion, Chunking, Indexing & Context Injection
 - [x] **Day 84**: Advanced RAG: Hybrid Search, Cross-Encoder Reranking & Metadata Filtering
 - [x] **Day 85**: RAG Evaluation with Ragas Framework & Semantic Response Caching
-- [ ] **Day 86**: LLM Tool Calling & Function Execution with Strict Pydantic Contracts
+- [x] **Day 86**: LLM Tool Calling & Function Execution with Strict Pydantic Contracts
 - [ ] **Day 87**: AI Agents: ReAct Architecture, State Machines & LangGraph Workflows
 - [ ] **Day 88**: AI Observability (LangSmith/OpenTelemetry) & LLM Security (Guardrails)
 - [ ] **Day 89**: **Capstone Project 4: Enterprise Multimodal RAG & Autonomous AI Agent Backend**
