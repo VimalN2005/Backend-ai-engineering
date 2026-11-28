@@ -1,0 +1,95 @@
+version: "3.8"
+
+services:
+  # 1. Capstone Multi-Agent Backend Service
+  agent-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: multimodal-agent-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=postgresql://postgres:postgres@pgvector-db:5432/multimodal_rag
+      - REDIS_URL=redis://redis-cache:6379/0
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - LOG_LEVEL=info
+    depends_on:
+      pgvector-db:
+        condition: service_healthy
+      redis-cache:
+        condition: service_healthy
+    networks:
+      - capstone-net
+
+  # 2. PostgreSQL 16 with pgvector Extension
+  pgvector-db:
+    image: pgvector/pgvector:pg16
+    container_name: pgvector-multimodal-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=multimodal_rag
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - capstone-net
+
+  # 3. Redis 7 Two-Tier Semantic Cache & Checkpointing
+  redis-cache:
+    image: redis:7-alpine
+    container_name: redis-semantic-cache
+    restart: unless-stopped
+    command: ["redis-server", "--maxmemory", "512mb", "--maxmemory-policy", "allkeys-lru"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - capstone-net
+
+  # 4. OpenTelemetry Collector for GenAI Traces & Metrics
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.95.0
+    container_name: otel-collector
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    ports:
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+      - "8888:8888" # Metrics
+    networks:
+      - capstone-net
+
+  # 5. Prometheus Metrics Aggregator
+  prometheus:
+    image: prom/prometheus:v2.50.1
+    container_name: prometheus-telemetry
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    networks:
+      - capstone-net
+
+networks:
+  capstone-net:
+    driver: bridge
+
+volumes:
+  pgdata:
+  redisdata:
